@@ -25,8 +25,8 @@ jobs:
       # نصب کتابخانه‌های مورد نیاز
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pyrogram requests beautifulsoup4 yfinance Pillow jdatetime arabic-reshaper python-bidi
+         python -m pip install --upgrade pip
+         pip install -r requirements.txt
 
       # اجرای ربات
       - name: Run bot
