@@ -1,0 +1,10 @@
+pyrogram
+requests
+beautifulsoup4
+yfinance
+Pillow
+jdatetime
+arabic-reshaper
+python-bidi
+apscheduler
+TgCrypto
