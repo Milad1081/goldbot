@@ -1,10 +1,26 @@
-import os, requests
+from pyrogram import Client
+from scrap import get_prices
+from image_gen import generate_price_image
+import os
 
-token = os.environ["BOT_TOKEN"]
-chat_id = os.environ["CHANNEL_ID"]
+API_ID = os.getenv("API_ID")
+API_HASH = os.getenv("API_HASH")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHANNEL_ID = os.getenv("CHANNEL_ID")
 
-url = f"https://api.telegram.org/bot{token}/sendMessage"
-r = requests.post(url, data={"chat_id": chat_id, "text": "سلام از GitHub Actions 🚀"})
+app = Client("goldbot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-print("Status:", r.status_code)
-print("Response:", r.text)
+def send_image():
+    prices = get_prices()
+    if prices:
+        image_path = generate_price_image(prices)
+        caption = (
+            "📊  قیمت‌های امروز مارکت\n\n"
+            "#قیمت_دلار #قیمت_طلا #قیمت_سکه"
+        )
+        app.send_photo(CHANNEL_ID, photo=image_path, caption=caption)
+
+if __name__ == "__main__":
+    app.start()
+    send_image()
+    app.stop()
