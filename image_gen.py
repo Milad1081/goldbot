@@ -65,12 +65,13 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     font_paths_shabnam = ["Shabnam-Medium.ttf", "fonts/Shabnam-Medium.ttf"]
     font_paths_vazir = ["Vazirmatn-Regular.ttf", "fonts/Vazirmatn-Regular.ttf"]
 
-    font_titr = load_font(font_paths_heavy, 110)
-    font_mid = load_font(font_paths_shabnam, 35)
-    font_time = load_font(font_paths_vazir, 35)
-    font_num = load_font(font_paths_heavy, 45)
-    font_id = load_font(font_paths_vazir, 33)
-    font_unit = load_font(font_paths_shabnam, 30)
+    font_titr = ImageFont.truetype("YekanBakh-Heavy.ttf", 110)
+    font_mid  = ImageFont.truetype("Shabnam-Medium.ttf", 35)
+    font_time = ImageFont.truetype("Vazirmatn-Regular.ttf", 35)
+    font_num  = ImageFont.truetype("YekanBakh-Heavy.ttf", 45)
+    font_id   = ImageFont.truetype("Vazirmatn-Regular.ttf", 33)
+    font_unit = ImageFont.truetype("Shabnam-Medium.ttf", 30)
+
 
     # زمان به وقت تهران (jdatetime)
     import pytz
