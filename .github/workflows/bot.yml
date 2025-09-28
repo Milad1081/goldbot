@@ -25,6 +25,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run RTL debug
+        run: python debug_font_rtl.py
+
+
       - name: Run Telegram Bot
         env:
           API_ID: ${{ secrets.API_ID }}
