@@ -2,12 +2,10 @@ from PIL import Image, ImageDraw, ImageFont
 import jdatetime
 import os
 from scrap import get_prices
-from rtl import rtl   # از پکیج pylover/rtl استفاده می‌کنیم
 
 
-# --- توابع کمکی ---
+# --- اعداد فارسی ---
 def to_persian_numbers(s):
-    """تبدیل اعداد انگلیسی به فارسی"""
     if not isinstance(s, str):
         s = str(s)
     return s.translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
@@ -20,9 +18,8 @@ def get_text_width(draw, text, font):
         return draw.textsize(text, font=font)[0]
 
 
-# --- توابع ترسیم ---
-def draw_neon_text(draw, position, text, font,
-                   text_color="white", glow_color="#61a8ad", align="left"):
+# --- ترسیم متن ---
+def draw_neon_text(draw, position, text, font, text_color="white", glow_color="#61a8ad", align="left"):
     x, y = position
     if align == "right":
         text_width = get_text_width(draw, text, font)
@@ -33,8 +30,7 @@ def draw_neon_text(draw, position, text, font,
     draw.text((x, y), text, font=font, fill=text_color)
 
 
-def draw_plain_text(draw, position, text, font,
-                    text_color="white", align="left"):
+def draw_plain_text(draw, position, text, font, text_color="white", align="left"):
     x, y = position
     if align == "right":
         text_width = get_text_width(draw, text, font)
@@ -95,12 +91,12 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     y_positions = [445, 515, 585, 655, 750, 820, 895, 965, 1055, 1135]
 
     for (label, value), y in zip(prices.items(), y_positions):
-        # برچسب راست‌چین با rtl از pylover/rtl
-        draw_neon_text(draw, (645, y), rtl(label), font_mid, align="right")
+        # برچسب راست‌چین (متن فارسی مستقیم)
+        draw_neon_text(draw, (645, y), label, font_mid, align="right")
 
         # واحد
         unit_text = units.get(label, "ریال")
-        draw_plain_text(draw, (115, y + 10), rtl(unit_text), font_unit, align="left")
+        draw_plain_text(draw, (115, y + 10), unit_text, font_unit, align="left")
 
         # عدد
         try:
@@ -115,12 +111,11 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         draw_plain_text(draw, (200, y), num_text, font_num, align="left")
 
     # فوتر
-    draw_neon_text(draw, (500, 1215), rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF")
-    draw_neon_text(draw, (190, 1215), rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (500, 1215), tele, font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (190, 1215), insta, font_id, text_color="#000000", glow_color="#FFFFFF")
 
     # تیتر
-    draw_neon_text(draw, (710, 195), rtl("قیمت طلا و ارز"), font_titr,
-                   text_color="white", glow_color="#00ffcc", align="right")
+    draw_neon_text(draw, (710, 195), "قیمت طلا و ارز", font_titr, text_color="white", glow_color="#00ffcc", align="right")
 
     img.save(output)
     print("Saved image:", output)
