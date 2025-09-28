@@ -1,4 +1,3 @@
-# image_gen.py
 from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -7,19 +6,21 @@ import os
 from scrap import get_prices
 
 
-# --- توابع کمکی برای فارسی ---
+# --- توابع کمکی ---
 def rtl(text: str) -> str:
-    """تبدیل متن فارسی به حالت صحیح (چپ به راست نشه)"""
+    """اصلاح متن فارسی/عربی برای راست‌به‌چپ"""
     return get_display(arabic_reshaper.reshape(str(text)))
 
 
 def to_persian_numbers(s):
+    """تبدیل اعداد انگلیسی به فارسی"""
     if not isinstance(s, str):
         s = str(s)
     return s.translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
 
 
 def get_text_width(draw, text, font):
+    """محاسبه عرض متن"""
     try:
         return draw.textlength(text, font=font)
     except Exception:
@@ -27,28 +28,33 @@ def get_text_width(draw, text, font):
 
 
 # --- توابع ترسیم ---
-def draw_neon_text(draw, position, text, font, text_color="white", glow_color="#61a8ad", align="left"):
-    """متن نئونی (سایه‌دار)"""
-    x, y = position
-    if align == "right":
-        text_width = get_text_width(draw, text, font)
-        x -= text_width
-    offsets = [(-1,0), (1,0), (0,-1), (0,1)]
+def draw_neon_text(draw, base_x, y, text, font, text_color="white", glow_color="#61a8ad", rtl_align=False):
+    """متن با افکت نئون"""
+    if rtl_align:
+        text_w = get_text_width(draw, text, font)
+        x = base_x - text_w
+    else:
+        x = base_x
+
+    offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     for dx, dy in offsets:
-        draw.text((x+dx, y+dy), text, font=font, fill=glow_color)
+        draw.text((x + dx, y + dy), text, font=font, fill=glow_color)
+
     draw.text((x, y), text, font=font, fill=text_color)
 
 
-def draw_plain_text(draw, position, text, font, text_color="white", align="left"):
-    """متن ساده بدون افکت"""
-    x, y = position
-    if align == "right":
-        text_width = get_text_width(draw, text, font)
-        x -= text_width
+def draw_plain_text(draw, base_x, y, text, font, text_color="white", rtl_align=False):
+    """متن ساده"""
+    if rtl_align:
+        text_w = get_text_width(draw, text, font)
+        x = base_x - text_w
+    else:
+        x = base_x
+
     draw.text((x, y), text, font=font, fill=text_color)
 
 
-# --- بارگذاری فونت‌ها فقط از پوشه fonts/ ---
+# --- بارگذاری فونت‌ها ---
 def load_font(filename, size):
     path = os.path.join("fonts", filename)
     if not os.path.exists(path):
@@ -64,10 +70,10 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
 
     # بارگذاری فونت‌ها
     font_titr = load_font("YekanBakh-Heavy.ttf", 110)
-    font_mid  = load_font("Shabnam-Medium.ttf", 35)
+    font_mid = load_font("Shabnam-Medium.ttf", 35)
     font_time = load_font("Vazirmatn-Regular.ttf", 35)
-    font_num  = load_font("YekanBakh-Heavy.ttf", 45)
-    font_id   = load_font("Vazirmatn-Regular.ttf", 33)
+    font_num = load_font("YekanBakh-Heavy.ttf", 45)
+    font_id = load_font("Vazirmatn-Regular.ttf", 33)
     font_unit = load_font("Shabnam-Medium.ttf", 30)
 
     # زمان و تاریخ
@@ -80,8 +86,8 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     time_str = to_persian_numbers(now_j.strftime("%H:%M"))
     date_str = to_persian_numbers(now_j.strftime("%Y/%m/%d"))
 
-    draw_neon_text(draw, (330, 347), time_str, font_time, align="right")
-    draw_neon_text(draw, (645, 347), date_str, font_time, align="right")
+    draw_neon_text(draw, 330, 347, time_str, font_time, rtl_align=True)
+    draw_neon_text(draw, 645, 347, date_str, font_time, rtl_align=True)
 
     # واحدها
     units = {
@@ -101,15 +107,14 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     y_positions = [445, 515, 585, 655, 750, 820, 895, 965, 1055, 1135]
 
     for (label, value), y in zip(prices.items(), y_positions):
-        # برچسب راست‌چین (با اصلاح جهت فارسی)
-        label_text = rtl(label)
-        draw_neon_text(draw, (645, y), label_text, font_mid, align="right")
+        # برچسب راست‌چین (اصلاح bidi)
+        draw_neon_text(draw, 645, y, rtl(label), font_mid, rtl_align=True)
 
-        # واحد (با اصلاح جهت فارسی)
-        unit_text = rtl(units.get(label, "ریال"))
-        draw_plain_text(draw, (115, y + 10), unit_text, font_unit, align="left")
+        # واحد
+        unit_text = units.get(label, "ریال")
+        draw_plain_text(draw, 115, y + 10, rtl(unit_text), font_unit)
 
-        # عدد (فقط تبدیل به فارسی، نیازی به rtl نیست)
+        # عدد
         try:
             val_int = int(value)
             if val_int == 0:
@@ -119,15 +124,15 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         except Exception:
             num_text = "—"
 
-        draw_plain_text(draw, (200, y), num_text, font_num, align="left")
+        draw_plain_text(draw, 200, y, num_text, font_num)
 
-    # فوتر (شبکه‌های اجتماعی - متن فارسی اصلاح شود)
-    draw_neon_text(draw, (500, 1215), rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF")
-    draw_neon_text(draw, (190, 1215), rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF")
+    # فوتر
+    draw_neon_text(draw, 500, 1215, rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF", rtl_align=True)
+    draw_neon_text(draw, 190, 1215, rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF", rtl_align=True)
 
     # تیتر
-    title = rtl("قیمت طلا و ارز")
-    draw_neon_text(draw, (710, 195), title, font_titr, text_color="white", glow_color="#00ffcc", align="right")
+    draw_neon_text(draw, 710, 195, rtl("قیمت طلا و ارز"), font_titr,
+                   text_color="white", glow_color="#00ffcc", rtl_align=True)
 
     img.save(output)
     print("Saved image:", output)
