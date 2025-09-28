@@ -1,17 +1,11 @@
 from PIL import Image, ImageDraw, ImageFont
-import arabic_reshaper
-from bidi.algorithm import get_display
 import jdatetime
 import os
 from scrap import get_prices
+from rtl import rtl   # از پکیج pylover/rtl استفاده می‌کنیم
 
 
 # --- توابع کمکی ---
-def rtl(text: str) -> str:
-    """اصلاح متن فارسی/عربی برای راست‌به‌چپ"""
-    return get_display(arabic_reshaper.reshape(str(text)))
-
-
 def to_persian_numbers(s):
     """تبدیل اعداد انگلیسی به فارسی"""
     if not isinstance(s, str):
@@ -20,7 +14,6 @@ def to_persian_numbers(s):
 
 
 def get_text_width(draw, text, font):
-    """محاسبه عرض متن"""
     try:
         return draw.textlength(text, font=font)
     except Exception:
@@ -28,29 +21,24 @@ def get_text_width(draw, text, font):
 
 
 # --- توابع ترسیم ---
-def draw_neon_text(draw, base_x, y, text, font, text_color="white", glow_color="#61a8ad", rtl_align=False):
-    """متن با افکت نئون"""
-    if rtl_align:
-        text_w = get_text_width(draw, text, font)
-        x = base_x - text_w
-    else:
-        x = base_x
-
-    offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+def draw_neon_text(draw, position, text, font,
+                   text_color="white", glow_color="#61a8ad", align="left"):
+    x, y = position
+    if align == "right":
+        text_width = get_text_width(draw, text, font)
+        x -= text_width
+    offsets = [(-1,0), (1,0), (0,-1), (0,1)]
     for dx, dy in offsets:
-        draw.text((x + dx, y + dy), text, font=font, fill=glow_color)
-
+        draw.text((x+dx, y+dy), text, font=font, fill=glow_color)
     draw.text((x, y), text, font=font, fill=text_color)
 
 
-def draw_plain_text(draw, base_x, y, text, font, text_color="white", rtl_align=False):
-    """متن ساده"""
-    if rtl_align:
-        text_w = get_text_width(draw, text, font)
-        x = base_x - text_w
-    else:
-        x = base_x
-
+def draw_plain_text(draw, position, text, font,
+                    text_color="white", align="left"):
+    x, y = position
+    if align == "right":
+        text_width = get_text_width(draw, text, font)
+        x -= text_width
     draw.text((x, y), text, font=font, fill=text_color)
 
 
@@ -70,10 +58,10 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
 
     # بارگذاری فونت‌ها
     font_titr = load_font("YekanBakh-Heavy.ttf", 110)
-    font_mid = load_font("Shabnam-Medium.ttf", 35)
+    font_mid  = load_font("Shabnam-Medium.ttf", 35)
     font_time = load_font("Vazirmatn-Regular.ttf", 35)
-    font_num = load_font("YekanBakh-Heavy.ttf", 45)
-    font_id = load_font("Vazirmatn-Regular.ttf", 33)
+    font_num  = load_font("YekanBakh-Heavy.ttf", 45)
+    font_id   = load_font("Vazirmatn-Regular.ttf", 33)
     font_unit = load_font("Shabnam-Medium.ttf", 30)
 
     # زمان و تاریخ
@@ -86,8 +74,8 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     time_str = to_persian_numbers(now_j.strftime("%H:%M"))
     date_str = to_persian_numbers(now_j.strftime("%Y/%m/%d"))
 
-    draw_neon_text(draw, 330, 347, time_str, font_time, rtl_align=True)
-    draw_neon_text(draw, 645, 347, date_str, font_time, rtl_align=True)
+    draw_neon_text(draw, (330, 347), time_str, font_time, align="right")
+    draw_neon_text(draw, (645, 347), date_str, font_time, align="right")
 
     # واحدها
     units = {
@@ -107,12 +95,12 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     y_positions = [445, 515, 585, 655, 750, 820, 895, 965, 1055, 1135]
 
     for (label, value), y in zip(prices.items(), y_positions):
-        # برچسب راست‌چین (اصلاح bidi)
-        draw_neon_text(draw, 645, y, rtl(label), font_mid, rtl_align=True)
+        # برچسب راست‌چین با rtl از pylover/rtl
+        draw_neon_text(draw, (645, y), rtl(label), font_mid, align="right")
 
         # واحد
         unit_text = units.get(label, "ریال")
-        draw_plain_text(draw, 115, y + 10, rtl(unit_text), font_unit)
+        draw_plain_text(draw, (115, y + 10), rtl(unit_text), font_unit, align="left")
 
         # عدد
         try:
@@ -124,15 +112,15 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         except Exception:
             num_text = "—"
 
-        draw_plain_text(draw, 200, y, num_text, font_num)
+        draw_plain_text(draw, (200, y), num_text, font_num, align="left")
 
     # فوتر
-    draw_neon_text(draw, 500, 1215, rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF", rtl_align=True)
-    draw_neon_text(draw, 190, 1215, rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF", rtl_align=True)
+    draw_neon_text(draw, (500, 1215), rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (190, 1215), rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF")
 
     # تیتر
-    draw_neon_text(draw, 710, 195, rtl("قیمت طلا و ارز"), font_titr,
-                   text_color="white", glow_color="#00ffcc", rtl_align=True)
+    draw_neon_text(draw, (710, 195), rtl("قیمت طلا و ارز"), font_titr,
+                   text_color="white", glow_color="#00ffcc", align="right")
 
     img.save(output)
     print("Saved image:", output)
@@ -153,22 +141,3 @@ if __name__ == "__main__":
         print("image generated -> final.png")
     else:
         print("No prices fetched.")
-
-
-
-# بخش تست
-if __name__ == "__main__":
-    from PIL import Image, ImageDraw, ImageFont
-    import arabic_reshaper
-    from bidi.algorithm import get_display
-
-    def rtl(text):
-        return get_display(arabic_reshaper.reshape(text))
-
-    img = Image.new("RGB", (400, 200), "black")
-    draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype("fonts/Vazirmatn-Regular.ttf", 40)
-    draw.text((200, 100), rtl("سلام دنیا ۱۴۰۴"), font=font, fill="white", anchor="mm")
-    img.save("test.png")
-    print("✅ تست ساخته شد: test.png")
-
