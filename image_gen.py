@@ -1,3 +1,4 @@
+# image_gen.py
 from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -6,21 +7,19 @@ import os
 from scrap import get_prices
 
 
-# --- کمکی برای فارسی ---
+# --- توابع کمکی برای فارسی ---
 def rtl(text: str) -> str:
-    """تبدیل متن فارسی به شکل صحیح (پیوسته و راست به چپ)"""
+    """تبدیل متن فارسی به حالت صحیح (چپ به راست نشه)"""
     return get_display(arabic_reshaper.reshape(str(text)))
 
 
 def to_persian_numbers(s):
-    """تبدیل اعداد انگلیسی به فارسی"""
     if not isinstance(s, str):
         s = str(s)
     return s.translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
 
 
 def get_text_width(draw, text, font):
-    """محاسبه عرض متن با توجه به فونت"""
     try:
         return draw.textlength(text, font=font)
     except Exception:
@@ -28,23 +27,20 @@ def get_text_width(draw, text, font):
 
 
 # --- توابع ترسیم ---
-def draw_neon_text(draw, position, text, font,
-                   text_color="white", glow_color="#61a8ad", align="left"):
-    """ترسیم متن با افکت نئون"""
+def draw_neon_text(draw, position, text, font, text_color="white", glow_color="#61a8ad", align="left"):
+    """متن نئونی (سایه‌دار)"""
     x, y = position
     if align == "right":
         text_width = get_text_width(draw, text, font)
         x -= text_width
-
-    offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    offsets = [(-1,0), (1,0), (0,-1), (0,1)]
     for dx, dy in offsets:
-        draw.text((x + dx, y + dy), text, font=font, fill=glow_color)
+        draw.text((x+dx, y+dy), text, font=font, fill=glow_color)
     draw.text((x, y), text, font=font, fill=text_color)
 
 
-def draw_plain_text(draw, position, text, font,
-                    text_color="white", align="left"):
-    """ترسیم متن ساده"""
+def draw_plain_text(draw, position, text, font, text_color="white", align="left"):
+    """متن ساده بدون افکت"""
     x, y = position
     if align == "right":
         text_width = get_text_width(draw, text, font)
@@ -52,7 +48,7 @@ def draw_plain_text(draw, position, text, font,
     draw.text((x, y), text, font=font, fill=text_color)
 
 
-# --- بارگذاری فونت‌ها از پوشه fonts/ ---
+# --- بارگذاری فونت‌ها فقط از پوشه fonts/ ---
 def load_font(filename, size):
     path = os.path.join("fonts", filename)
     if not os.path.exists(path):
@@ -68,21 +64,21 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
 
     # بارگذاری فونت‌ها
     font_titr = load_font("YekanBakh-Heavy.ttf", 110)
-    font_mid = load_font("Shabnam-Medium.ttf", 35)
+    font_mid  = load_font("Shabnam-Medium.ttf", 35)
     font_time = load_font("Vazirmatn-Regular.ttf", 35)
-    font_num = load_font("YekanBakh-Heavy.ttf", 45)
-    font_id = load_font("Vazirmatn-Regular.ttf", 33)
+    font_num  = load_font("YekanBakh-Heavy.ttf", 45)
+    font_id   = load_font("Vazirmatn-Regular.ttf", 33)
     font_unit = load_font("Shabnam-Medium.ttf", 30)
 
-    # زمان و تاریخ به وقت تهران
+    # زمان و تاریخ
     import pytz
     from datetime import datetime
     tehran = pytz.timezone("Asia/Tehran")
     now_dt = datetime.now(tehran)
     now_j = jdatetime.datetime.fromgregorian(datetime=now_dt)
 
-    time_str = rtl(to_persian_numbers(now_j.strftime("%H:%M")))
-    date_str = rtl(to_persian_numbers(now_j.strftime("%Y/%m/%d")))
+    time_str = to_persian_numbers(now_j.strftime("%H:%M"))
+    date_str = to_persian_numbers(now_j.strftime("%Y/%m/%d"))
 
     draw_neon_text(draw, (330, 347), time_str, font_time, align="right")
     draw_neon_text(draw, (645, 347), date_str, font_time, align="right")
@@ -101,18 +97,19 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         'اتریوم': "دلار",
     }
 
-    # موقعیت‌ها (y)
+    # موقعیت‌ها
     y_positions = [445, 515, 585, 655, 750, 820, 895, 965, 1055, 1135]
 
     for (label, value), y in zip(prices.items(), y_positions):
-        # برچسب راست‌چین (متن فارسی اصلاح‌شده)
-        draw_neon_text(draw, (645, y), rtl(label), font_mid, align="right")
+        # برچسب راست‌چین (با اصلاح جهت فارسی)
+        label_text = rtl(label)
+        draw_neon_text(draw, (645, y), label_text, font_mid, align="right")
 
-        # واحد (راست‌چین)
-        unit_text = units.get(label, "ریال")
-        draw_plain_text(draw, (115, y + 10), rtl(unit_text), font_unit, align="left")
+        # واحد (با اصلاح جهت فارسی)
+        unit_text = rtl(units.get(label, "ریال"))
+        draw_plain_text(draw, (115, y + 10), unit_text, font_unit, align="left")
 
-        # مقدار عددی (فقط تبدیل به فارسی، بدون rtl)
+        # عدد (فقط تبدیل به فارسی، نیازی به rtl نیست)
         try:
             val_int = int(value)
             if val_int == 0:
@@ -124,22 +121,19 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
 
         draw_plain_text(draw, (200, y), num_text, font_num, align="left")
 
-    # فوتر
-    draw_neon_text(draw, (500, 1215), rtl(tele), font_id,
-                   text_color="#000000", glow_color="#FFFFFF")
-    draw_neon_text(draw, (190, 1215), rtl(insta), font_id,
-                   text_color="#000000", glow_color="#FFFFFF")
+    # فوتر (شبکه‌های اجتماعی - متن فارسی اصلاح شود)
+    draw_neon_text(draw, (500, 1215), rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (190, 1215), rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF")
 
     # تیتر
-    draw_neon_text(draw, (710, 195), rtl("قیمت طلا و ارز"),
-                   font_titr, text_color="white", glow_color="#00ffcc", align="right")
+    title = rtl("قیمت طلا و ارز")
+    draw_neon_text(draw, (710, 195), title, font_titr, text_color="white", glow_color="#00ffcc", align="right")
 
     img.save(output)
     print("Saved image:", output)
     return output
 
 
-# --- تابع اصلی که بات استفاده می‌کنه ---
 def generate_price_image(prices, insta="milad108", tele="market weave"):
     template = "photo_2025.png"
     if not os.path.exists(template):
@@ -147,7 +141,6 @@ def generate_price_image(prices, insta="milad108", tele="market weave"):
     return build_price_image(template, prices, insta=insta, tele=tele, output="final.png")
 
 
-# --- تست محلی ---
 if __name__ == "__main__":
     p = get_prices()
     if p:
