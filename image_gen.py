@@ -1,27 +1,28 @@
+# image_gen.py
 from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
 import jdatetime
-from scrap import get_prices  # قیمت‌ها از اینجا میاد
+import os
+from scrap import get_prices
 
-# ---- راست‌چین فارسی ----
+# تابع راست‌چین کامل (reshape + bidi)
 def rtl(text):
     return get_display(arabic_reshaper.reshape(str(text)))
 
-# ---- تبدیل اعداد انگلیسی به فارسی ----
+# تبدیل اعداد به فارسی
 def to_persian_numbers(s):
     if not isinstance(s, str):
         s = str(s)
     return s.translate(str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹"))
 
-# ---- به دست آوردن عرض متن ----
+# بدست آوردن عرض متن با دو متد ممکن
 def get_text_width(draw, text, font):
     try:
         return draw.textlength(text, font=font)
     except Exception:
         return draw.textsize(text, font=font)[0]
 
-# ---- افکت نئونی ----
 def draw_neon_text(draw, position, text, font,
                    text_color="white", glow_color="#61a8ad", align="left"):
     x, y = position
@@ -34,7 +35,6 @@ def draw_neon_text(draw, position, text, font,
         draw.text((x+dx, y+dy), text, font=font, fill=glow_color)
     draw.text((x, y), text, font=font, fill=text_color)
 
-# ---- متن ساده بدون افکت ----
 def draw_plain_text(draw, position, text, font, text_color="white", align="left"):
     x, y = position
     if align == "right":
@@ -42,28 +42,49 @@ def draw_plain_text(draw, position, text, font, text_color="white", align="left"
         x -= text_width
     draw.text((x, y), text, font=font, fill=text_color)
 
-# ---- ساخت تصویر نهایی ----
+# تلاش برای بارگذاری فونت‌‌های فارسی داخل ریپو یا سیستم و fallback
+def load_font(path_list, size, fallback_size=20):
+    for p in path_list:
+        try:
+            if os.path.exists(p):
+                return ImageFont.truetype(p, size)
+        except Exception:
+            continue
+    # fallback: از فونت پیش‌فرض PIL استفاده کن
+    try:
+        return ImageFont.load_default()
+    except:
+        return ImageFont.truetype("DejaVuSans.ttf", fallback_size)
+
 def build_price_image(template_path, prices, insta, tele, output="final.png"):
     img = Image.open(template_path).convert("RGBA")
     draw = ImageDraw.Draw(img)
 
-    # فونت‌ها
-    font_titr = ImageFont.truetype("YekanBakh-Heavy.ttf", 110)
-    font_mid = ImageFont.truetype("Shabnam-Medium.ttf", 35)
-    font_time = ImageFont.truetype("Vazirmatn-Regular.ttf", 35)
-    font_num = ImageFont.truetype("YekanBakh-Heavy.ttf", 45)
-    font_id = ImageFont.truetype("Vazirmatn-Regular.ttf", 33)
-    font_unit = ImageFont.truetype("Shabnam-Medium.ttf", 30)
+    # مسیرهای ممکن فونت (در ریپو شما اگر فونت‌ها در پوشه باشند نام‌ آنها را اضافه کن)
+    font_paths_heavy = ["YekanBakh-Heavy.ttf", "fonts/YekanBakh-Heavy.ttf"]
+    font_paths_shabnam = ["Shabnam-Medium.ttf", "fonts/Shabnam-Medium.ttf"]
+    font_paths_vazir = ["Vazirmatn-Regular.ttf", "fonts/Vazirmatn-Regular.ttf"]
 
-    # تاریخ و ساعت شمسی
-    now = jdatetime.datetime.now()
-    time_str = rtl(to_persian_numbers(now.strftime("%H:%M")))
-    date_str = rtl(to_persian_numbers(now.strftime("%Y/%m/%d")))
+    font_titr = load_font(font_paths_heavy, 110)
+    font_mid = load_font(font_paths_shabnam, 35)
+    font_time = load_font(font_paths_vazir, 35)
+    font_num = load_font(font_paths_heavy, 45)
+    font_id = load_font(font_paths_vazir, 33)
+    font_unit = load_font(font_paths_shabnam, 30)
 
+    # زمان به وقت تهران (jdatetime)
+    import pytz
+    from datetime import datetime
+    tehran = pytz.timezone("Asia/Tehran")
+    now_dt = datetime.now(tehran)
+    now_j = jdatetime.datetime.fromgregorian(datetime=now_dt)
+    time_str = rtl(to_persian_numbers(now_j.strftime("%H:%M")))
+    date_str = rtl(to_persian_numbers(now_j.strftime("%Y/%m/%d")))
+
+    # قرار دادن زمان/تاریخ
     draw_neon_text(draw, (330, 347), time_str, font_time, align="right")
     draw_neon_text(draw, (645, 347), date_str, font_time, align="right")
 
-    # واحدها دستی
     units = {
         'دلار آمریکا': "ریال",
         'یورو': "ریال",
@@ -77,22 +98,31 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         'اتریوم': "دلار",
     }
 
-    # موقعیت‌های عمودی هر ردیف
+    # موقعیت عمودی هر ردیف (مطابق قالب شما)
     y_positions = [445, 515, 585, 655, 750, 820, 895, 965, 1055, 1135]
 
+    # اگر prices ترتیب متفاوت دارد، توجه کن که نمایش براساس items() انجام می‌شود
     for (label, value), y in zip(prices.items(), y_positions):
-        # رسم لیبل با نئون
+        # label نئونی راست‌چین
         draw_neon_text(draw, (645, y), rtl(label), font_mid, align="right")
 
-        # واحد
+        # واحد سمت چپ
         unit_text = units.get(label, "ریال")
-        draw_plain_text(draw, (115, y + 10), rtl(unit_text), font_unit, text_color="white", align="left")
+        draw_plain_text(draw, (115, y + 10), rtl(unit_text), font_unit, align="left")
 
-        # عدد فارسی + راست‌چین
-        num_text = rtl(to_persian_numbers(f"{int(value):,}"))
-        draw_plain_text(draw, (200, y), num_text, font_num, text_color="white", align="left")
+        # عدد: اگر مقدار 0 بود نشانگر "—" نمایش داده شود
+        try:
+            val_int = int(value)
+            if val_int == 0:
+                num_text = rtl("—")
+            else:
+                num_text = rtl(to_persian_numbers(f"{val_int:,}"))
+        except Exception:
+            num_text = rtl("—")
 
-    # فوتر
+        draw_plain_text(draw, (200, y), num_text, font_num, align="left")
+
+    # فوتر (اینستاگرام و تلگرام)
     draw_neon_text(draw, (500, 1215), rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF")
     draw_neon_text(draw, (190, 1215), rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF")
 
@@ -102,18 +132,15 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     img.save(output)
     return output
 
-# ---- تابع اصلی ----
 def generate_price_image(prices, insta="milad108", tele="market weave"):
-    return build_price_image(
-        "photo_2025.png",
-        prices,
-        insta=insta,
-        tele=tele,
-        output="final.png"
-    )
+    # این تابع ورودی می‌گیرد و مسیر عکس خروجی را برمی‌گرداند
+    template = "photo_2025.png"  # مطمئن شو این فایل در ریپو هست
+    return build_price_image(template, prices, insta=insta, tele=tele, output="final.png")
 
-# ---- اجرا برای تست ----
 if __name__ == "__main__":
-    prices = get_prices()
-    if prices:
-        generate_price_image(prices)
+    p = get_prices()
+    if p:
+        generate_price_image(p)
+        print("image generated -> final.png")
+    else:
+        print("No prices fetched.")
