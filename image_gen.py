@@ -6,7 +6,7 @@ from scrap import get_prices  # قیمت‌ها از اینجا میاد
 
 # ---- راست‌چین فارسی ----
 def rtl(text):
-    return get_display(arabic_reshaper.reshape(text))
+    return get_display(arabic_reshaper.reshape(str(text)))
 
 # ---- تبدیل اعداد انگلیسی به فارسی ----
 def to_persian_numbers(s):
@@ -57,11 +57,11 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
 
     # تاریخ و ساعت شمسی
     now = jdatetime.datetime.now()
-    time_str = to_persian_numbers(now.strftime("%H:%M"))
-    date_str = to_persian_numbers(now.strftime("%Y/%m/%d"))
+    time_str = rtl(to_persian_numbers(now.strftime("%H:%M")))
+    date_str = rtl(to_persian_numbers(now.strftime("%Y/%m/%d")))
 
-    draw_neon_text(draw, (330, 347), rtl(time_str), font_time, align="right")
-    draw_neon_text(draw, (645, 347), rtl(date_str), font_time, align="right")
+    draw_neon_text(draw, (330, 347), time_str, font_time, align="right")
+    draw_neon_text(draw, (645, 347), date_str, font_time, align="right")
 
     # واحدها دستی
     units = {
@@ -84,17 +84,17 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         # رسم لیبل با نئون
         draw_neon_text(draw, (645, y), rtl(label), font_mid, align="right")
 
-        # واحد سمت چپ عدد، با فونت مناسب و راست چین
+        # واحد
         unit_text = units.get(label, "ریال")
         draw_plain_text(draw, (115, y + 10), rtl(unit_text), font_unit, text_color="white", align="left")
 
-        # عدد فارسی
-        num_text = to_persian_numbers(f"{int(value):,}")
+        # عدد فارسی + راست‌چین
+        num_text = rtl(to_persian_numbers(f"{int(value):,}"))
         draw_plain_text(draw, (200, y), num_text, font_num, text_color="white", align="left")
 
     # فوتر
-    draw_neon_text(draw, (500, 1215), tele, font_id, text_color="#000000", glow_color="#FFFFFF")
-    draw_neon_text(draw, (190, 1215), insta, font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (500, 1215), rtl(tele), font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (190, 1215), rtl(insta), font_id, text_color="#000000", glow_color="#FFFFFF")
 
     # تیتر
     draw_neon_text(draw, (710, 195), rtl("قیمت طلا و ارز"), font_titr, text_color="white", glow_color="#00ffcc", align="right")
