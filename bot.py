@@ -19,6 +19,8 @@ def send_image():
             "#قیمت_دلار #قیمت_طلا #قیمت_سکه"
         )
         app.send_photo(CHANNEL_ID, photo=image_path, caption=caption)
+    else:
+        app.send_message(CHANNEL_ID, "⚠️ نتونستم قیمت‌ها رو دریافت کنم.")
 
 if __name__ == "__main__":
     app.start()
