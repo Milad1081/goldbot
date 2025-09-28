@@ -15,13 +15,19 @@ def get_prices():
         except:
             return 0
 
-    # قیمت انس طلا از yfinance
-    gold = yf.Ticker("GC=F")
-    gold_price = int(gold.history(period="1d")['Close'].iloc[-1])
+    def safe_price(ticker, period="1d"):
+        try:
+            history = yf.Ticker(ticker).history(period=period)
+            if not history.empty:
+                return int(history['Close'].iloc[-1])
+        except Exception as e:
+            print(f"⚠️ Error fetching {ticker}: {e}")
+        return 0
 
-    # قیمت بیت‌کوین و اتریوم از yfinance
-    btc_price = int(yf.Ticker("BTC-USD").history(period="1d")['Close'].iloc[-1])
-    eth_price = int(yf.Ticker("ETH-USD").history(period="1d")['Close'].iloc[-1])
+    # قیمت انس طلا، بیت‌کوین و اتریوم
+    gold_price = safe_price("GC=F")
+    btc_price = safe_price("BTC-USD")
+    eth_price = safe_price("ETH-USD")
 
     return {
         'دلار آمریکا': clean(soup.find("tr", {"data-market-row": "price_dollar_rl"})["data-price"]),
