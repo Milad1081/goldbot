@@ -20,8 +20,8 @@ def get_gold_ounce():
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # پیدا کردن قیمت انس طلا
-        price_element = soup.find('span', {'id': 'gpoticker'})
+        # پیدا کردن قیمت انس طلا با کلاس درست
+        price_element = soup.find('span', {'class': 'gpoticker-price'})
         if price_element:
             price_text = price_element.text.strip()
             # حذف کاراکترهای غیر عددی و تبدیل به عدد
