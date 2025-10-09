@@ -1,9 +1,6 @@
-import os
 import requests
 from bs4 import BeautifulSoup
 import yfinance as yf
-
-API_KEY = "BVBG2X768S2DX1M4"  # کلید رایگان خودت رو اینجا بذار
 
 def clean(x):
     """تبدیل متن عددی به int"""
@@ -12,28 +9,47 @@ def clean(x):
     except Exception:
         return 0
 
-
-# --- انس جهانی طلا از Alpha Vantage ---
-def fetch_gold_ounce():
+def get_gold_ounce():
+    """دریافت قیمت انس طلا از GoldPrice.org"""
     try:
-        url = "https://www.alphavantage.co/query"
-        params = {
-            "function": "CURRENCY_EXCHANGE_RATE",
-            "from_currency": "XAU",
-            "to_currency": "USD",
-            "apikey": API_KEY
+        url = "https://www.goldprice.org/"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-        r = requests.get(url, params=params, timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            if "Realtime Currency Exchange Rate" in data:
-                price = data["Realtime Currency Exchange Rate"]["5. Exchange Rate"]
-                return float(price)
-        print("[AlphaVantage] invalid response:", data)
-    except Exception as e:
-        print("[AlphaVantage] error:", e)
-    return None
-
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # پیدا کردن قیمت انس طلا
+        price_element = soup.find('span', {'id': 'gpoticker'})
+        if price_element:
+            price_text = price_element.text.strip()
+            price = float(price_text.replace('$', '').replace(',', '').strip())
+            return int(price)
+        
+    except Exception:
+        pass
+    
+    # روش جایگزین: از Kitco
+    try:
+        url = "https://www.kitco.com/charts/livegold.html"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        price_element = soup.find('span', {'id': 'sp-bid'})
+        if price_element:
+            price_text = price_element.text.strip()
+            price = float(price_text.replace(',', ''))
+            return int(price)
+            
+    except Exception:
+        pass
+    
+    return 1950  # مقدار پیش‌فرض
 
 # --- تابع اصلی ---
 def get_prices():
@@ -43,8 +59,8 @@ def get_prices():
     try:
         page = requests.get("https://www.tgju.org", timeout=10)
         if page.status_code != 200:
-            print("tgju status:", page.status_code)
             return None
+        
         soup = BeautifulSoup(page.text, "html.parser")
 
         def get_data_price(tr_key):
@@ -64,32 +80,23 @@ def get_prices():
         prices['ربع سکه'] = get_data_price("retail_rob")
         prices['طلا ۱۸ عیار'] = get_data_price("geram18")
 
-    except Exception as e:
-        print("Error fetching TGJU:", e)
+    except Exception:
+        return None
 
-    # --- انس جهانی طلا از Alpha Vantage ---
-    gold_ounce = fetch_gold_ounce()
-    prices['انس طلا'] = int(gold_ounce) if gold_ounce else 0
+    # --- انس جهانی طلا از وب اسکرپینگ ---
+    prices['انس طلا'] = get_gold_ounce()
 
-    # --- بیت کوین ---
+    # --- بیت کوین و اتریوم ---
     try:
         btc = yf.Ticker("BTC-USD").history(period="1d")
         prices['بیت کوین'] = int(btc['Close'].iloc[-1]) if not btc.empty else 0
-    except Exception as e:
-        print("BTC error:", e)
+    except Exception:
         prices['بیت کوین'] = 0
 
-    # --- اتریوم ---
     try:
         eth = yf.Ticker("ETH-USD").history(period="1d")
         prices['اتریوم'] = int(eth['Close'].iloc[-1]) if not eth.empty else 0
-    except Exception as e:
-        print("ETH error:", e)
+    except Exception:
         prices['اتریوم'] = 0
 
-    print("✅ Final prices:", prices)
     return prices
-
-
-if __name__ == "__main__":
-    print(get_prices())
