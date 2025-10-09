@@ -10,77 +10,28 @@ def clean(x):
         return 0
 
 def get_gold_ounce():
-    """دریافت قیمت انس طلا از منابع معتبر"""
+    """دریافت قیمت انس طلا از GoldPrice.org"""
     try:
-        # روش 1: از Financial Modeling Prep (رایگان)
-        url = "https://financialmodelingprep.com/api/v3/quote/XAUUSD?apikey=demo"
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            if data and len(data) > 0:
-                price = data[0]['price']
-                return int(price)
-    except Exception:
-        pass
-    
-    try:
-        # روش 2: از MarketWatch با ساختار دقیق‌تر
-        url = "https://www.marketwatch.com/investing/future/gold"
+        url = "https://www.goldprice.org/"
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
+        
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # چندین روش برای پیدا کردن قیمت
-        selectors = [
-            'span[class*="value"]',
-            'bg-quote[class*="value"]',
-            'div[class*="price"]',
-            'span[class*="price"]'
-        ]
-        
-        for selector in selectors:
-            price_elements = soup.select(selector)
-            for element in price_elements:
-                price_text = element.text.strip()
-                if price_text and any(c.isdigit() for c in price_text):
-                    try:
-                        price = float(price_text.replace(',', '').replace('$', ''))
-                        if 1000 < price < 3000:  # محدوده منطقی قیمت طلا
-                            return int(price)
-                    except:
-                        continue
-    except Exception:
-        pass
-    
-    try:
-        # روش 3: از Investing.com با ساختار متفاوت
-        url = "https://api.investing.com/api/financialdata/tablelist/8830?field=last"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            if 'data' in data and len(data['data']) > 0:
-                price = data['data'][0]['last']
-                return int(price)
-    except Exception:
-        pass
-    
-    # روش 4: از Yahoo Finance برای Gold Futures
-    try:
-        gold = yf.Ticker("GC=F")
-        data = gold.history(period="1d")
-        if not data.empty:
-            price = data['Close'].iloc[-1]
+        # پیدا کردن قیمت انس طلا
+        price_element = soup.find('span', {'id': 'gpoticker'})
+        if price_element:
+            price_text = price_element.text.strip()
+            # حذف کاراکترهای غیر عددی و تبدیل به عدد
+            price = float(price_text.replace('$', '').replace(',', '').strip())
             return int(price)
-    except Exception:
-        pass
+        
+    except Exception as e:
+        print(f"Error getting gold price: {e}")
     
-    return 0  # اگر پیدا نشد، صفر برگردون
+    return 0
 
 # --- تابع اصلی ---
 def get_prices():
@@ -114,9 +65,8 @@ def get_prices():
     except Exception:
         return None
 
-    # --- انس جهانی طلا ---
-    gold_price = get_gold_ounce()
-    prices['انس طلا'] = gold_price
+    # --- انس جهانی طلا از GoldPrice.org ---
+    prices['انس طلا'] = get_gold_ounce()
 
     # --- بیت کوین و اتریوم ---
     try:
