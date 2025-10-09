@@ -3,6 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 import yfinance as yf
 
+API_KEY = "BVBG2X768S2DX1M4"  # کلید رایگان خودت رو اینجا بذار
+
 def clean(x):
     """تبدیل متن عددی به int"""
     try:
@@ -11,18 +13,25 @@ def clean(x):
         return 0
 
 
-# --- انس جهانی طلا از metals.live ---
+# --- انس جهانی طلا از Alpha Vantage ---
 def fetch_gold_ounce():
     try:
-        r = requests.get("https://api.metals.live/v1/spot", timeout=10)
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "CURRENCY_EXCHANGE_RATE",
+            "from_currency": "XAU",
+            "to_currency": "USD",
+            "apikey": API_KEY
+        }
+        r = requests.get(url, params=params, timeout=10)
         if r.status_code == 200:
             data = r.json()
-            for item in data:
-                if "gold" in item:
-                    return float(item["gold"])
-        print("[metals.live] invalid response")
+            if "Realtime Currency Exchange Rate" in data:
+                price = data["Realtime Currency Exchange Rate"]["5. Exchange Rate"]
+                return float(price)
+        print("[AlphaVantage] invalid response:", data)
     except Exception as e:
-        print("[metals.live] error:", e)
+        print("[AlphaVantage] error:", e)
     return None
 
 
@@ -58,7 +67,7 @@ def get_prices():
     except Exception as e:
         print("Error fetching TGJU:", e)
 
-    # --- انس جهانی طلا از metals.live ---
+    # --- انس جهانی طلا از Alpha Vantage ---
     gold_ounce = fetch_gold_ounce()
     prices['انس طلا'] = int(gold_ounce) if gold_ounce else 0
 
