@@ -10,26 +10,25 @@ def clean(x):
         return 0
 
 def get_gold_ounce():
-    """دریافت قیمت انس طلا از GoldPrice.org"""
+    """دریافت قیمت انس طلا از Kitco"""
     try:
-        url = "https://www.goldprice.org/"
+        url = "https://www.kitco.com/charts/livegold.html"
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # پیدا کردن قیمت انس طلا با کلاس درست
-        price_element = soup.find('span', {'class': 'gpoticker-price'})
+        # پیدا کردن قیمت طلا
+        price_element = soup.find('div', {'id': 'sp-bid'})
         if price_element:
             price_text = price_element.text.strip()
-            # حذف کاراکترهای غیر عددی و تبدیل به عدد
-            price = float(price_text.replace('$', '').replace(',', '').strip())
+            price = float(price_text.replace(',', ''))
             return int(price)
-        
+            
     except Exception as e:
-        print(f"Error getting gold price: {e}")
+        print(f"Kitco error: {e}")
     
     return 0
 
@@ -65,7 +64,7 @@ def get_prices():
     except Exception:
         return None
 
-    # --- انس جهانی طلا از GoldPrice.org ---
+    # --- انس جهانی طلا از Kitco ---
     prices['انس طلا'] = get_gold_ounce()
 
     # --- بیت کوین و اتریوم ---
