@@ -82,7 +82,7 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         'سکه امامی': "ریال",
         'ربع سکه': "ریال",
         'طلا ۱۸ عیار': "ریال",
-        'اونس طلا': "دلار",
+        'انس طلا': "دلار",
         'بیت کوین': "دلار",
         'اتریوم': "دلار",
     }
@@ -111,8 +111,8 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         draw_plain_text(draw, (200, y), num_text, font_num, align="left")
 
     # فوتر
-    draw_neon_text(draw, (500, 1215), tele, font_id, text_color="#000000", glow_color="#FFFFFF")
-    draw_neon_text(draw, (190, 1215), insta, font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (500, 1220), tele, font_id, text_color="#000000", glow_color="#FFFFFF")
+    draw_neon_text(draw, (190, 1220), insta, font_id, text_color="#000000", glow_color="#FFFFFF")
 
     # تیتر
     draw_neon_text(draw, (710, 195), "قیمت طلا و ارز", font_titr, text_color="white", glow_color="#00ffcc", align="right")
