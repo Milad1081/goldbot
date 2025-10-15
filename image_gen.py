@@ -57,7 +57,7 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     font_mid  = load_font("Shabnam-Medium.ttf", 35)
     font_time = load_font("Vazirmatn-Regular.ttf", 35)
     font_num  = load_font("YekanBakh-Heavy.ttf", 45)
-    font_id   = load_font("Vazirmatn-Regular.ttf", 33)
+    font_id   = load_font("Vazirmatn-Regular.ttf", 28)
     font_unit = load_font("Shabnam-Medium.ttf", 30)
 
     # زمان و تاریخ
