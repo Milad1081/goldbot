@@ -82,7 +82,7 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
         'سکه امامی': "ریال",
         'ربع سکه': "ریال",
         'طلا ۱۸ عیار': "ریال",
-        'انس طلا': "دلار",
+        'اونس طلا': "دلار",
         'بیت کوین': "دلار",
         'اتریوم': "دلار",
     }
@@ -122,7 +122,7 @@ def build_price_image(template_path, prices, insta, tele, output="final.png"):
     return output
 
 
-def generate_price_image(prices, insta="milad108", tele="market weave"):
+def generate_price_image(prices, insta="milad108", tele="MarketWave108"):
     template = "photo_2025.png"
     if not os.path.exists(template):
         raise FileNotFoundError(f"Template not found: {template}")
